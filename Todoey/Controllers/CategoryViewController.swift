@@ -8,8 +8,10 @@
 
 import UIKit
 import RealmSwift
+import SwipeCellKit
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController{
 
     let realm = try! Realm()
     
@@ -22,6 +24,8 @@ class CategoryViewController: UITableViewController {
         
         loadCategories()
 
+        tableView.separatorStyle = .none
+
     }
 
     //MARK: - Tableview datasource Methods
@@ -30,13 +34,22 @@ class CategoryViewController: UITableViewController {
         return categories?.count ?? 1
     }
    
+    
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell")
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
 
-        cell?.textLabel?.text = categories?[indexPath.row].name ?? "No Categories added yet"
+        cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories added yet"
         
-        return cell!
+        if let cellColour = categories?[indexPath.row].colour{
+            cell.backgroundColor = UIColor(hexString: cellColour)
+            cell.textLabel?.textColor = UIColor(contrastingBlackOrWhiteColorOn: UIColor(hexString: cellColour), isFlat: true)
+        }else{
+            cell.backgroundColor = UIColor.randomFlat()
+            cell.textLabel?.textColor = UIColor(contrastingBlackOrWhiteColorOn: cell.backgroundColor, isFlat: true)
+        }
+
+        return cell
     }
     
     
@@ -60,6 +73,22 @@ class CategoryViewController: UITableViewController {
         self.tableView.reloadData()
     }
     
+    override func updateModel(at indexPath: IndexPath) {
+        
+        if let categoryForDeletion = self.categories?[indexPath.row]{
+            do{
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            }catch{
+                print("Error deleting category in realm, \(error)")
+            }
+            //self.tableView.reloadData()
+
+            print("Item Deleted")
+        }
+    }
+    
     //MARK: - Add new categories
 
 
@@ -78,6 +107,7 @@ class CategoryViewController: UITableViewController {
             
             let newCat = Category()
             newCat.name = textFeild.text!
+            newCat.colour = UIColor.randomFlat().hexValue()
             
             self.save(category: newCat)
             
@@ -113,3 +143,5 @@ class CategoryViewController: UITableViewController {
     }
 
 }
+
+
